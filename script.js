@@ -8,35 +8,61 @@ const wheelCanvas = document.getElementById('wheel');
 const squadNameInput = document.getElementById('squadNameInput');
 const setSquadNameButton = document.getElementById('setSquadNameButton');
 const squadNameDisplay = document.getElementById('squadNameDisplay');
+const volumeInput = document.getElementById('volumeInput');
 
 // Sons para o giro e a seleção
-const spinSound = new Audio('Som-Roleta.mp3'); // Certifique-se de que o caminho do som está correto
+const spinSound = new Audio('Som-Roleta.mp3');
 const selectSound = new Audio('som-fim.mp3');
 
 // Variáveis globais
 let names = JSON.parse(localStorage.getItem('wheelNames')) || [];
+let colors = {};  // Objeto para armazenar as cores associadas aos nomes
 let rotation = 0;
 let isSpinning = false;
 let spinInterval = null;
 
+// Função para gerar uma cor aleatória em hexadecimal
+function getRandomColor() {
+    const letters = '0123456789ABCDEF';
+    let color = '#';
+    for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+// Gera um array de cores aleatórias para a roleta
+function generateRandomColors(numColors) {
+    const colorsArray = [];
+    for (let i = 0; i < numColors; i++) {
+        colorsArray.push(getRandomColor());
+    }
+    return colorsArray;
+}
+
 // Função para desenhar a roleta
 function drawWheel() {
     const ctx = wheelCanvas.getContext('2d');
-    const colors = ['#000000', '#FFFFFF'];
     const numSlices = names.length;
     const sliceAngle = (2 * Math.PI) / numSlices;
 
     ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
 
+    // Gera cores aleatórias para as fatias
+    const wheelColors = generateRandomColors(numSlices);
+
     for (let i = 0; i < numSlices; i++) {
         const startAngle = i * sliceAngle;
         const endAngle = (i + 1) * sliceAngle;
 
-        // Desenha as fatias
+        // Usa a cor gerada para a fatia
+        const color = wheelColors[i];
+
+        // Desenha as fatias com cores aleatórias
         ctx.beginPath();
         ctx.moveTo(250, 250);
         ctx.arc(250, 250, 250, startAngle, endAngle);
-        ctx.fillStyle = colors[i % 2];
+        ctx.fillStyle = color;
         ctx.fill();
 
         // Adiciona o texto
@@ -44,7 +70,7 @@ function drawWheel() {
         ctx.translate(250, 250);
         ctx.rotate(startAngle + sliceAngle / 2);
         ctx.textAlign = "center";
-        ctx.fillStyle = colors[i % 2] === '#000000' ? '#FFFFFF' : '#000000';
+        ctx.fillStyle = '#000000'; // Texto sempre preto para melhor contraste
         ctx.font = "bold 16px Arial";
         ctx.fillText(names[i], 150, 10);
         ctx.restore();
@@ -54,44 +80,41 @@ function drawWheel() {
 // Função para girar a roleta
 function spinWheel() {
     let spinSpeed = 0.3;  // Velocidade do giro
-    const duration = 25000;  // Duração em milissegundos
+    const duration = 30000;  // Duração do giro em milissegundos
     const startTime = Date.now();
 
     spinSound.play();  // Toca o som de giro
-    isSpinning = true;
+    isSpinning = true;  // Marca que a roleta está girando
 
     spinInterval = setInterval(() => {
         const elapsedTime = Date.now() - startTime;
+        rotation += spinSpeed;  // Aumenta a rotação com base na velocidade
+        drawWheelWithRotation(rotation);  // Atualiza o desenho da roleta com a rotação
 
-        // Aumenta o giro
-        rotation += spinSpeed;
-
-        drawWheelWithRotation(rotation); // Atualiza o desenho da roleta
-
-        // Se o tempo passou do limite, pare o giro
+        // Se o tempo de rotação acabar
         if (elapsedTime >= duration) {
             clearInterval(spinInterval);
-            selectName(rotation);  // Seleciona o nome
-            isSpinning = false;
+            selectName(rotation);  // Seleciona o nome sorteado
+            isSpinning = false;  // Marca que a roleta parou de girar
             spinSound.pause();
-            spinSound.currentTime = 0;
+            spinSound.currentTime = 0;  // Reinicia o som
         }
-    }, 30);
+    }, 30);  // Intervalo de 30ms para suavizar a rotação
 }
 
 // Função para desenhar a roleta com rotação
 function drawWheelWithRotation(rotation) {
     const ctx = wheelCanvas.getContext('2d');
-    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
+    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);  // Limpa a roleta anterior
     ctx.save();
-    ctx.translate(250, 250);
-    ctx.rotate(rotation);
-    ctx.translate(-250, -250);
-    drawWheel();
+    ctx.translate(250, 250);  // Move o contexto para o centro da roleta
+    ctx.rotate(rotation);  // Aplica a rotação
+    ctx.translate(-250, -250);  // Move de volta após rotacionar
+    drawWheel();  // Redesenha a roleta atualizada
     ctx.restore();
 }
 
-// Função para selecionar o nome
+// Seleciona o nome sorteado
 function selectName(rotation) {
     const sliceAngle = (2 * Math.PI) / names.length;
     const selectedSlice = Math.floor(((rotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / sliceAngle);
@@ -99,80 +122,83 @@ function selectName(rotation) {
 
     resultElement.textContent = `Quem vai apresentar a Daily é: ${selectedName}`;
     selectSound.play();  // Toca o som de seleção
-
-    // Remove o nome sorteado
-    names.splice(selectedSlice, 1);
-    localStorage.setItem('wheelNames', JSON.stringify(names));
-    drawWheel(); // Redesenha a roleta
-    populateNameList(); // Atualiza a lista de nomes
 }
 
-// Eventos dos botões
-setSquadNameButton.addEventListener('click', () => {
-    const squadName = squadNameInput.value.trim();
-    if (squadName) {
-        squadNameDisplay.textContent = `Nome da Squad: ${squadName}`; // Exibe o nome da Squad
-        squadNameInput.value = ''; // Limpa o campo de entrada
-    }
-});
-
+// Adiciona nome à lista
 addNameButton.addEventListener('click', function() {
     const newName = newNameInput.value.trim();
     if (newName !== '') {
         names.push(newName);
         localStorage.setItem('wheelNames', JSON.stringify(names));
-        drawWheel();
-        populateNameList();
-        newNameInput.value = '';
+        drawWheel();  // Redesenha a roleta com o novo nome
+        populateNameList();  // Atualiza a lista de nomes
+        newNameInput.value = '';  // Limpa o campo de entrada
     }
 });
 
+// Define o nome da Squad
+setSquadNameButton.addEventListener('click', () => {
+    const squadName = squadNameInput.value.trim();
+    if (squadName) {
+        squadNameDisplay.textContent = `Nome da Squad: ${squadName}`;
+        squadNameInput.value = '';
+    }
+});
+
+// Evento para rodar a roleta
 spinButton.addEventListener('click', function() {
-    if (!isSpinning) {
+    if (!isSpinning) {  // Somente roda se não estiver girando
         spinWheel();
     }
 });
 
+// Evento para reiniciar a roleta
 resetButton.addEventListener('click', function() {
-    // Retorna os nomes removidos para a roleta
     names = JSON.parse(localStorage.getItem('wheelNames')) || [];
-    drawWheel();
-    populateNameList();
+    drawWheel();  // Redesenha a roleta
+    populateNameList();  // Atualiza a lista de nomes
     resultElement.textContent = '';  // Limpa o resultado
 });
 
-// Função para preencher a lista de nomes
+// Preenche a lista de nomes com o seletor de cores
 function populateNameList() {
-    nameList.innerHTML = ''; // Limpa a lista existente
+    nameList.innerHTML = '';
     names.forEach((name, index) => {
-        const li = document.createElement('li'); // Cria um novo item de lista
-        li.textContent = name; // Define o texto do item como o nome
+        const li = document.createElement('li');
+        li.textContent = name;
 
-        // Cria o botão de excluir
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = 'Excluir'; // Define o texto do botão
-        deleteButton.style.backgroundColor = '#ff4d4d'; // Cor de fundo do botão
-        deleteButton.style.color = '#fff'; // Cor da fonte do botão
-        deleteButton.style.border = 'none'; // Remove a borda do botão
-        deleteButton.style.borderRadius = '5px'; // Arredonda os cantos do botão
-        deleteButton.style.padding = '5px 10px'; // Adiciona preenchimento interno ao botão
-        deleteButton.style.cursor = 'pointer'; // Muda o cursor para indicar que é clicável
+        // Cria o seletor de cor
+        const colorPicker = document.createElement('input');
+        colorPicker.type = 'color';
+        colorPicker.value = colors[name] || getRandomColor();  // Cor existente ou aleatória
 
-        // Adiciona o evento de clique para excluir o nome
-        deleteButton.addEventListener('click', () => {
-            names.splice(index, 1); // Remove o nome da lista
-            localStorage.setItem('wheelNames', JSON.stringify(names)); // Atualiza o armazenamento local
-            drawWheel(); // Redesenha a roleta
-            populateNameList(); // Atualiza a lista de nomes
+        // Atualiza a cor ao mudar no seletor
+        colorPicker.addEventListener('input', (e) => {
+            colors[name] = e.target.value;  // Salva a cor selecionada
+            drawWheel();  // Redesenha a roleta com a nova cor
         });
 
-        li.appendChild(deleteButton); // Adiciona o botão ao item de lista
-        nameList.appendChild(li); // Adiciona o item à lista
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'Excluir';
+        deleteButton.classList.add('delete-button');
+
+        // Remove o nome da lista e a cor associada
+        deleteButton.addEventListener('click', () => {
+            names.splice(index, 1);
+            delete colors[name];  // Remove a cor associada ao nome
+            localStorage.setItem('wheelNames', JSON.stringify(names));
+            drawWheel();  // Redesenha a roleta
+            populateNameList();  // Atualiza a lista de nomes
+        });
+
+        li.appendChild(colorPicker);  // Adiciona o seletor de cor
+        li.appendChild(deleteButton);  // Adiciona o botão de excluir
+        nameList.appendChild(li);
     });
 }
 
-// Inicialização
+// Inicializa a roleta e a lista ao carregar a página
 window.onload = function() {
-    drawWheel();
-    populateNameList();
+    drawWheel();  // Desenha a roleta
+    populateNameList();  // Preenche a lista de nomes
 };
