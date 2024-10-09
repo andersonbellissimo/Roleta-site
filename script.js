@@ -54,7 +54,7 @@ function drawWheel() {
 // Função para girar a roleta
 function spinWheel() {
     let spinSpeed = 0.3;  // Velocidade do giro
-    const duration = 5000;  // Duração em milissegundos
+    const duration = 25000;  // Duração em milissegundos
     const startTime = Date.now();
 
     spinSound.play();  // Toca o som de giro
