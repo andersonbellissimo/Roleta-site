@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roleta de Nomes</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <h1 class="logo-text">Daily Squads</h1>
+    </header>
+
+    <main class="main-container">
+        <!-- Painel da esquerda com o Canvas -->
+        <div class="left-panel">
+            <canvas id="wheel" width="500" height="500"></canvas>
+        </div>
+
+        <!-- Painel da direita contendo a lista de nomes e os botões -->
+        <div class="right-panel">
+            <h2>Resultado:</h2>
+            <h3 id="result"></h3>
+            <h2 id="squadNameDisplay">Nome da Squad: </h2> <!-- Exibe o nome da Squad -->
+            <h3>Nomes</h3>
+            <ul id="nameList"></ul>
+
+            <!-- Controles movidos para abaixo da lista de nomes -->
+            <div class="controls">
+                <input type="text" id="squadNameInput" placeholder="Digite o nome da Squad" required>
+                <button id="setSquadNameButton">Definir Nome da Squad</button>
+                <input type="text" id="newNameInput" placeholder="Adicionar novo nome" required>
+                <button id="addNameButton">Adicionar</button>
+                <button id="spinButton">Girar a Roleta</button>
+                <button id="resetButton">Reiniciar Roleta</button>
+            </div>
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>
