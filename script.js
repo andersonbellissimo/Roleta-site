@@ -14,12 +14,20 @@ const volumeInput = document.getElementById('volumeInput');
 const spinSound = new Audio('Som-Roleta.mp3');
 const selectSound = new Audio('som-fim.mp3');
 
+// Ajustar volume
+volumeInput.addEventListener('input', function() {
+    const volume = volumeInput.value;
+    spinSound.volume = volume;
+    selectSound.volume = volume;
+});
+
 // Variáveis globais
 let names = JSON.parse(localStorage.getItem('wheelNames')) || [];
 let colors = {};  // Objeto para armazenar as cores associadas aos nomes
 let rotation = 0;
 let isSpinning = false;
 let spinInterval = null;
+let currentSpeed = 0.3; // Velocidade inicial de rotação
 
 // Função para gerar uma cor aleatória em hexadecimal
 function getRandomColor() {
@@ -77,22 +85,23 @@ function drawWheel() {
     }
 }
 
-// Função para girar a roleta
+// Função para girar a roleta com desaceleração
 function spinWheel() {
-    let spinSpeed = 0.3;  // Velocidade do giro
-    const duration = 30000;  // Duração do giro em milissegundos
-    const startTime = Date.now();
+    let spinSpeed = currentSpeed;
+    const friction = 0.99;  // Fricção para desacelerar
+    const minSpeed = 0.01;  // Velocidade mínima antes de parar
 
     spinSound.play();  // Toca o som de giro
     isSpinning = true;  // Marca que a roleta está girando
 
     spinInterval = setInterval(() => {
-        const elapsedTime = Date.now() - startTime;
         rotation += spinSpeed;  // Aumenta a rotação com base na velocidade
         drawWheelWithRotation(rotation);  // Atualiza o desenho da roleta com a rotação
 
-        // Se o tempo de rotação acabar
-        if (elapsedTime >= duration) {
+        spinSpeed *= friction;  // Aplica fricção para desacelerar
+
+        // Se a velocidade for menor que o mínimo, parar a roleta
+        if (spinSpeed < minSpeed) {
             clearInterval(spinInterval);
             selectName(rotation);  // Seleciona o nome sorteado
             isSpinning = false;  // Marca que a roleta parou de girar
@@ -114,14 +123,18 @@ function drawWheelWithRotation(rotation) {
     ctx.restore();
 }
 
-// Seleciona o nome sorteado
+// Seleciona o nome sorteado e remove da roleta
 function selectName(rotation) {
     const sliceAngle = (2 * Math.PI) / names.length;
     const selectedSlice = Math.floor(((rotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / sliceAngle);
     const selectedName = names[selectedSlice];
 
-    resultElement.textContent = `Quem vai apresentar a Daily é: ${selectedName}`;
-    selectSound.play();  // Toca o som de seleção
+    resultElement.textContent = `Hoje a Daily é toda sua: ${selectedName}`;
+
+    // Remove o nome sorteado da lista
+    names.splice(selectedSlice, 1);
+    localStorage.setItem('wheelNames', JSON.stringify(names));
+    drawWheel();  // Redesenha a roleta com o nome removido
 }
 
 // Adiciona nome à lista
