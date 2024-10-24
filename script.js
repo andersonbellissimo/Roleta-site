@@ -12,7 +12,6 @@ const volumeInput = document.getElementById('volumeInput');
 
 // Sons para o giro e a seleção
 const spinSound = new Audio('Som-Roleta.mp3');
-const selectSound = new Audio('som-fim.mp3');
 
 // Ajustar volume
 volumeInput.addEventListener('input', function() {
