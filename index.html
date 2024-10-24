@@ -23,19 +23,23 @@
             <h3 id="result"></h3>
             <h2 id="squadNameDisplay">Nome da Squad: </h2> <!-- Exibe o nome da Squad -->
             <h3>Nomes</h3>
-            <ul id="nameList"></ul>
+            
+            <!-- Div para permitir scroll na lista de nomes -->
+            <div class="name-list-container">
+                <ul id="nameList"></ul>
+            </div>
 
             <!-- Controles movidos para abaixo da lista de nomes -->
             <div class="controls">
-                <input type="text" id="squadNameInput" placeholder="Digite o nome da Squad" required>
-                <button id="setSquadNameButton">Definir Nome da Squad</button>
-                <input type="text" id="newNameInput" placeholder="Adicionar novo nome" required>
-                <button id="addNameButton">Adicionar</button>
-                <button id="spinButton">Girar a Roleta</button>
-                <button id="resetButton">Reiniciar Roleta</button>
+                <input type="text" id="squadNameInput" class="input-field" placeholder="Digite o nome da Squad" required>
+                <button id="setSquadNameButton" class="btn primary">Definir Nome da Squad</button>
+                <input type="text" id="newNameInput" class="input-field" placeholder="Adicionar novo nome" required>
+                <button id="addNameButton" class="btn primary">Adicionar</button>
+                <button id="spinButton" class="btn secondary">Girar a Roleta</button>
+                <button id="resetButton" class="btn danger">Reiniciar Roleta</button>
 
                 <div class="volume-control">
-                    <label for="volumeInput">Volume:</label>
+                    <label for="volumeInput"><i class="volume-icon"></i></label>
                     <input type="range" id="volumeInput" min="0" max="1" step="0.1" value="1">
                 </div>
             </div>
