@@ -11,24 +11,29 @@ const setSquadNameButton = document.getElementById('setSquadNameButton');
 const squadNameDisplay = document.getElementById('squadNameDisplay');
 const volumeInput = document.getElementById('volumeInput');
 
+// Caminhos para ícones personalizados
+const deleteIconPath = 'excluir icon.png'; // Caminho do ícone de lixeira
+const imageIconPath = 'img icon.png';      // Caminho do ícone de imagem
+
 // Sons para o giro e a seleção
-const spinSound = new Audio('Som-Roleta.mp3');
+const spinSound = new Audio('Som-Roleta.M4A');
 
 // Ajustar volume do som
 volumeInput.addEventListener('input', function () {
     const volume = volumeInput.value;
-    spinSound.volume = volume; // Ajusta o volume do som
+    spinSound.volume = volume;
 });
 
 // Variáveis globais
 let names = JSON.parse(localStorage.getItem('wheelNames')) || []; // Lista de nomes
 let removedNames = []; // Lista de nomes removidos apenas da roleta
-let colors = {};  // Objeto para armazenar as cores associadas aos nomes
-let rotation = 0; // Rotação inicial da roleta
-let isSpinning = false; // Controle para verificar se a roleta está girando
-let spinInterval = null; // Armazenar o intervalo do giro
-let currentSpeed = 0.3; // Velocidade inicial de rotação
-let outlineColor = '#333'; // Cor padrão do outliner das fatias (pode ser alterada)
+let colors = {};       // Objeto para armazenar as cores associadas aos nomes
+let images = {};       // Objeto para armazenar imagens associadas aos nomes
+let rotation = 0;      // Rotação inicial da roleta
+let isSpinning = false;
+let spinInterval = null;
+let currentSpeed = 0.3;
+let outlineColor = '#333';
 
 // Função para gerar uma cor aleatória em hexadecimal
 function getRandomColor() {
@@ -40,54 +45,43 @@ function getRandomColor() {
     return color;
 }
 
-// Gera um array de cores aleatórias para a roleta
-function generateRandomColors(numColors) {
-    const colorsArray = [];
-    for (let i = 0; i < numColors; i++) {
-        colorsArray.push(getRandomColor());
-    }
-    return colorsArray;
-}
-
-// Função para desenhar a roleta com efeito 3D
+// Função para desenhar a roleta com imagens e efeito 3D
 function drawWheel() {
     const ctx = wheelCanvas.getContext('2d');
-    const availableNames = names.filter(name => !removedNames.includes(name)); // Nomes disponíveis para a roleta
+    const availableNames = names.filter(name => !removedNames.includes(name));
     const numSlices = availableNames.length;
     const sliceAngle = (2 * Math.PI) / numSlices;
 
-    // Limpa o canvas antes de desenhar
     ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
 
-    // Usa cores armazenadas ou gera novas cores
     availableNames.forEach((name, i) => {
-        if (!colors[name]) {
-            colors[name] = getRandomColor(); // Gera cor aleatória se não existir
-        }
-
+        if (!colors[name]) colors[name] = getRandomColor();
         const startAngle = i * sliceAngle;
         const endAngle = (i + 1) * sliceAngle;
 
-        // Desenha a fatia com a cor associada ao nome
+        // Desenha a fatia com cor associada ao nome
         ctx.beginPath();
         ctx.moveTo(250, 250);
         ctx.arc(250, 250, 250, startAngle, endAngle);
         ctx.fillStyle = colors[name];
         ctx.fill();
-
-        // Desenha o outliner ao redor da fatia
-        ctx.strokeStyle = outlineColor; // Cor do outliner
-        ctx.lineWidth = 3; // Espessura do contorno
+        ctx.strokeStyle = outlineColor;
+        ctx.lineWidth = 3;
         ctx.stroke();
 
-        // Adiciona o nome na fatia
+        // Adiciona a imagem e o nome na fatia
         ctx.save();
         ctx.translate(250, 250);
         ctx.rotate(startAngle + sliceAngle / 2);
-        ctx.textAlign = "center";
-        ctx.fillStyle = '#000000'; // Texto sempre preto para melhor contraste
+        ctx.textAlign = "left";
+        ctx.fillStyle = '#000000';
         ctx.font = "bold 16px Arial";
-        ctx.fillText(availableNames[i], 150, 10);
+        if (images[name]) {
+            const img = new Image();
+            img.src = images[name];
+            ctx.drawImage(img, 120, -15, 30, 30); // Posiciona a imagem
+        }
+        ctx.fillText(name, 150, 10);
         ctx.restore();
     });
 }
@@ -95,54 +89,51 @@ function drawWheel() {
 // Função para girar a roleta com desaceleração
 function spinWheel() {
     let spinSpeed = currentSpeed;
-    const friction = 0.99;  // Fricção para desacelerar
-    const minSpeed = 0.01;  // Velocidade mínima antes de parar
+    const friction = 0.99;
+    const minSpeed = 0.01;
 
-    spinSound.currentTime = 0; // Reinicia o som
-    spinSound.play();  // Toca o som de giro imediatamente
-    isSpinning = true;  // Marca que a roleta está girando
+    spinSound.currentTime = 0;
+    spinSound.play();
+    isSpinning = true;
 
     spinInterval = setInterval(() => {
-        rotation += spinSpeed;  // Aumenta a rotação com base na velocidade
-        drawWheelWithRotation(rotation);  // Atualiza o desenho da roleta com a rotação
+        rotation += spinSpeed;
+        drawWheelWithRotation(rotation);
 
-        spinSpeed *= friction;  // Aplica fricção para desacelerar
+        spinSpeed *= friction;
 
-        // Se a velocidade for menor que o mínimo, parar a roleta
         if (spinSpeed < minSpeed) {
             clearInterval(spinInterval);
-            selectName(rotation);  // Seleciona o nome sorteado
-            isSpinning = false;  // Marca que a roleta parou de girar
-            spinSound.pause(); // Para o som
-            spinSound.currentTime = 0;  // Reinicia o som
+            selectName(rotation);
+            isSpinning = false;
+            spinSound.pause();
+            spinSound.currentTime = 0;
         }
-    }, 30);  // Intervalo de 30ms para suavizar a rotação
+    }, 30);
 }
 
 // Função para desenhar a roleta com rotação
 function drawWheelWithRotation(rotation) {
     const ctx = wheelCanvas.getContext('2d');
-    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);  // Limpa a roleta anterior
+    ctx.clearRect(0, 0, wheelCanvas.width, wheelCanvas.height);
     ctx.save();
-    ctx.translate(250, 250);  // Move o contexto para o centro da roleta
-    ctx.rotate(rotation);  // Aplica a rotação
-    ctx.translate(-250, -250);  // Move de volta após rotacionar
-    drawWheel();  // Redesenha a roleta atualizada
+    ctx.translate(250, 250);
+    ctx.rotate(rotation);
+    ctx.translate(-250, -250);
+    drawWheel();
     ctx.restore();
 }
 
-// Seleciona o nome sorteado e remove da roleta (mas mantém na lista de nomes)
+// Seleciona o nome sorteado e remove da roleta (mantém na lista de nomes)
 function selectName(rotation) {
-    const availableNames = names.filter(name => !removedNames.includes(name)); // Nomes disponíveis
+    const availableNames = names.filter(name => !removedNames.includes(name));
     const sliceAngle = (2 * Math.PI) / availableNames.length;
     const selectedSlice = Math.floor(((rotation % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) / sliceAngle);
     const selectedName = availableNames[selectedSlice];
 
     resultElement.textContent = `Hoje a Daily é toda sua: ${selectedName}`;
-
-    // Remove o nome sorteado apenas da roleta, mas não da listagem
     removedNames.push(selectedName);
-    drawWheel();  // Redesenha a roleta com o nome removido
+    drawWheel();
 }
 
 // Adiciona nome à lista
@@ -151,9 +142,9 @@ addNameButton.addEventListener('click', function () {
     if (newName !== '') {
         names.push(newName);
         localStorage.setItem('wheelNames', JSON.stringify(names));
-        drawWheel();  // Redesenha a roleta com o novo nome
-        populateNameList();  // Atualiza a lista de nomes
-        newNameInput.value = '';  // Limpa o campo de entrada
+        drawWheel();
+        populateNameList();
+        newNameInput.value = '';
     }
 });
 
@@ -168,63 +159,85 @@ setSquadNameButton.addEventListener('click', () => {
 
 // Evento para rodar a roleta
 spinButton.addEventListener('click', function () {
-    if (!isSpinning) {  // Somente roda se não estiver girando
-        spinWheel();
-    }
+    if (!isSpinning) spinWheel();
 });
 
 // Evento para reiniciar a roleta
 resetButton.addEventListener('click', function () {
-    removedNames = [];  // Limpa a lista de nomes removidos para reiniciar a roleta
-    drawWheel();  // Redesenha a roleta com todos os nomes
-    resultElement.textContent = '';  // Limpa o resultado
+    removedNames = [];
+    drawWheel();
+    resultElement.textContent = '';
 });
 
-// Preenche a lista de nomes com o seletor de cores
+// Preenche a lista de nomes com seletor de cores e botão de imagem
 function populateNameList() {
     nameList.innerHTML = '';
     names.forEach((name, index) => {
         const li = document.createElement('li');
-        li.textContent = name;
+        
+        const nameContainer = document.createElement('div');
+        nameContainer.textContent = name;
+
+        // Botão de upload de imagem
+        const imageInput = document.createElement('input');
+        imageInput.type = 'file';
+        imageInput.accept = 'image/*';
+        imageInput.style.display = 'none';
+
+        const imageIcon = document.createElement('img');
+        imageIcon.src = imageIconPath;
+        imageIcon.className = 'image-icon';
+        imageIcon.style.cursor = 'pointer';
+        imageIcon.addEventListener('click', () => imageInput.click());
+
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    images[name] = event.target.result;
+                    drawWheel();
+                };
+                reader.readAsDataURL(file);
+            }
+        });
 
         // Cria o seletor de cor
         const colorPicker = document.createElement('input');
         colorPicker.type = 'color';
-        colorPicker.value = colors[name] || getRandomColor();  // Cor existente ou aleatória
+        colorPicker.value = colors[name] || getRandomColor();
 
-        // Atualiza a cor ao mudar no seletor
         colorPicker.addEventListener('input', (e) => {
-            colors[name] = e.target.value;  // Salva a cor selecionada
-            drawWheel();  // Redesenha a roleta com a nova cor
+            colors[name] = e.target.value;
+            drawWheel();
         });
 
-        const deleteButton = document.createElement('button');
-        deleteButton.textContent = 'Excluir';
+        const deleteButton = document.createElement('img');
+        deleteButton.src = deleteIconPath;
         deleteButton.classList.add('delete-button');
-
-        // Remove o nome da lista e a cor associada
+        deleteButton.style.cursor = 'pointer';
         deleteButton.addEventListener('click', () => {
             names.splice(index, 1);
-            delete colors[name];  // Remove a cor associada ao nome
+            delete colors[name];
+            delete images[name];
             localStorage.setItem('wheelNames', JSON.stringify(names));
-            drawWheel();  // Redesenha a roleta
-            populateNameList();  // Atualiza a lista de nomes
+            drawWheel();
+            populateNameList();
         });
 
-        // Alinha o seletor de cor e o botão de excluir
         const actionsDiv = document.createElement('div');
         actionsDiv.style.display = 'flex';
         actionsDiv.style.alignItems = 'center';
-        actionsDiv.appendChild(colorPicker);  // Adiciona o seletor de cor
-        actionsDiv.appendChild(deleteButton);  // Adiciona o botão de excluir
-        li.appendChild(actionsDiv);  // Adiciona a div de ações ao item da lista
+        actionsDiv.append(imageIcon, imageInput, colorPicker, deleteButton);
 
+        li.appendChild(nameContainer);
+        li.appendChild(actionsDiv);
         nameList.appendChild(li);
     });
 }
 
 // Inicializa a roleta e a lista ao carregar a página
 window.onload = function () {
-    drawWheel();  // Desenha a roleta
-    populateNameList();  // Preenche a lista de nomes
+    drawWheel();
+    populateNameList();
 };
